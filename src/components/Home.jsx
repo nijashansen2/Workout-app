@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { EXERCISES, loadProgress, getExerciseProgression, getTodayWorkoutStatus, getNextWorkoutDay } from '../workoutData';
 
+const CIRCUIT_ORDER = ['pushups', 'squats', 'pullups'];
+
 export default function Home({ onStartWorkout, onProgress }) {
   const [progress, setProgress] = useState(null);
 
@@ -44,7 +46,7 @@ export default function Home({ onStartWorkout, onProgress }) {
             <span className="banner-icon">🔥</span>
             <div>
               <strong>Træningsdag!</strong>
-              <p>3 øvelser · ~10 minutter</p>
+              <p>2 runder · 3 øvelser · ~10 minutter</p>
             </div>
           </div>
         ) : (
@@ -58,36 +60,32 @@ export default function Home({ onStartWorkout, onProgress }) {
         )}
       </div>
 
-      <p className="section-label">ØVELSER</p>
+      <p className="section-label">DAGENS CIRCUIT</p>
 
-      <div className="exercise-list">
-        {Object.values(EXERCISES).map((ex) => {
-          const prog = getExerciseProgression(ex.id, progress[ex.id] || 1);
+      <div className="circuit-preview">
+        {CIRCUIT_ORDER.map((exId, i) => {
+          const prog = getExerciseProgression(exId, progress[exId] || 1);
           return (
-            <button
-              key={ex.id}
-              className="exercise-card"
-              onClick={() => onStartWorkout(ex.id)}
-            >
-              <div className="ex-left">
-                <span className="ex-emoji">{ex.emoji}</span>
+            <div key={exId} className="circuit-preview-row">
+              <div className="circuit-preview-left">
+                <span className="ex-emoji">{EXERCISES[exId].emoji}</span>
                 <div>
                   <div className="ex-name">{prog.name}</div>
-                  <div className="ex-muscle">{ex.muscle}</div>
+                  <div className="ex-muscle">{EXERCISES[exId].muscle}</div>
                 </div>
               </div>
-              <div className="ex-right">
-                <div className="ex-sets">
-                  {prog.isDuration
-                    ? `${prog.sets}×${prog.duration}s`
-                    : `${prog.sets}×${prog.reps}`}
-                </div>
-                <div className="ex-level">Niveau {progress[ex.id] || 1}</div>
+              <div className="ex-sets">
+                {prog.sets}×{prog.isDuration ? `${prog.duration}s` : prog.reps}
               </div>
-            </button>
+              {i < CIRCUIT_ORDER.length - 1 && <div className="circuit-arrow">↓</div>}
+            </div>
           );
         })}
       </div>
+
+      <button className="primary-btn start-btn" onClick={onStartWorkout}>
+        {doneToday ? 'Træn igen 🔁' : 'Start træning 🔥'}
+      </button>
 
       <div className="schedule-section">
         <p className="section-label">UGENTLIG PLAN</p>
@@ -97,10 +95,7 @@ export default function Home({ onStartWorkout, onProgress }) {
             const isTraining = [1, 3, 5].includes(dayIndex);
             const isToday = new Date().getDay() === dayIndex;
             return (
-              <div
-                key={i}
-                className={`schedule-day ${isTraining ? 'train' : 'rest'} ${isToday ? 'today' : ''}`}
-              >
+              <div key={i} className={`schedule-day ${isTraining ? 'train' : 'rest'} ${isToday ? 'today' : ''}`}>
                 <span className="day-label">{day}</span>
                 <span className="day-icon">{isTraining ? '💪' : '—'}</span>
               </div>
