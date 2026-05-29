@@ -1,23 +1,35 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { EXERCISES, loadProgress, saveProgress, getExerciseProgression } from '../workoutData';
 
 export default function Progress({ onBack }) {
-  const [progress, setProgress] = useState(() => loadProgress());
+  const [progress, setProgress] = useState(null);
 
-  function changeLevel(exerciseId, delta) {
+  useEffect(() => {
+    loadProgress().then(setProgress);
+  }, []);
+
+  async function changeLevel(exerciseId, delta) {
     const ex = EXERCISES[exerciseId];
     const current = progress[exerciseId] || 1;
     const newLevel = Math.max(1, Math.min(current + delta, ex.progressions.length));
     const updated = { ...progress, [exerciseId]: newLevel };
-    saveProgress(updated);
+    await saveProgress(updated);
     setProgress(updated);
   }
 
-  function resetAll() {
+  async function resetAll() {
     if (!confirm('Vil du nulstille al fremgang?')) return;
     const reset = { pushups: 1, squats: 1, pullups: 1, completedDates: [], totalWorkouts: 0 };
-    saveProgress(reset);
+    await saveProgress(reset);
     setProgress(reset);
+  }
+
+  if (!progress) {
+    return (
+      <div className="screen" style={{ alignItems: 'center', justifyContent: 'center', minHeight: '100dvh' }}>
+        <div className="loading">Henter data...</div>
+      </div>
+    );
   }
 
   const streak = calculateStreak(progress.completedDates || []);
@@ -76,21 +88,9 @@ export default function Progress({ onBack }) {
             </div>
 
             <div className="level-controls">
-              <button
-                className="level-btn"
-                onClick={() => changeLevel(ex.id, -1)}
-                disabled={level <= 1}
-              >
-                −
-              </button>
+              <button className="level-btn" onClick={() => changeLevel(ex.id, -1)} disabled={level <= 1}>−</button>
               <span>Justér niveau</span>
-              <button
-                className="level-btn"
-                onClick={() => changeLevel(ex.id, 1)}
-                disabled={level >= maxLevel}
-              >
-                +
-              </button>
+              <button className="level-btn" onClick={() => changeLevel(ex.id, 1)} disabled={level >= maxLevel}>+</button>
             </div>
 
             <div className="progression-list">

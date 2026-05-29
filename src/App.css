@@ -306,6 +306,18 @@ body {
 
 .next-set-hint { font-size: 13px; color: var(--muted); }
 
+/* LOADING */
+.loading {
+  color: var(--muted);
+  font-size: 16px;
+  animation: pulse 1.2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
 /* DONE */
 .done-card { text-align: center; }
 .done-emoji { font-size: 52px; }

@@ -5,24 +5,23 @@ const PHASES = { INTRO: 'intro', WORK: 'work', REST: 'rest', DONE: 'done' };
 
 export default function Workout({ exerciseId, onDone }) {
   const ex = EXERCISES[exerciseId];
-  const [progress, setProgress] = useState(() => loadProgress());
-  const level = progress[exerciseId] || 1;
-  const prog = getExerciseProgression(exerciseId, level);
-
+  const [progress, setProgress] = useState(null);
   const [phase, setPhase] = useState(PHASES.INTRO);
   const [currentSet, setCurrentSet] = useState(1);
-  const [timeLeft, setTimeLeft] = useState(prog.rest);
+  const [timeLeft, setTimeLeft] = useState(null);
   const [completedSets, setCompletedSets] = useState(0);
   const [timerActive, setTimerActive] = useState(false);
   const intervalRef = useRef(null);
 
-  const startRest = useCallback(() => {
-    setPhase(PHASES.REST);
-    setTimeLeft(prog.rest);
-    setTimerActive(true);
-  }, [prog.rest]);
+  useEffect(() => {
+    loadProgress().then(setProgress);
+  }, []);
+
+  const prog = progress ? getExerciseProgression(exerciseId, progress[exerciseId] || 1) : null;
+  const level = progress?.[exerciseId] || 1;
 
   const nextSet = useCallback(() => {
+    if (!prog) return;
     setTimerActive(false);
     const next = currentSet + 1;
     if (next > prog.sets) {
@@ -31,7 +30,7 @@ export default function Workout({ exerciseId, onDone }) {
       setCurrentSet(next);
       setPhase(PHASES.WORK);
     }
-  }, [currentSet, prog.sets]);
+  }, [currentSet, prog]);
 
   useEffect(() => {
     if (!timerActive) return;
@@ -49,6 +48,20 @@ export default function Workout({ exerciseId, onDone }) {
     return () => clearInterval(intervalRef.current);
   }, [timerActive, nextSet]);
 
+  if (!progress || !prog) {
+    return (
+      <div className="screen workout-screen" style={{ justifyContent: 'center' }}>
+        <div className="loading">Henter data...</div>
+      </div>
+    );
+  }
+
+  function startRest() {
+    setPhase(PHASES.REST);
+    setTimeLeft(prog.rest);
+    setTimerActive(true);
+  }
+
   function handleSetDone() {
     setCompletedSets((s) => s + 1);
     if (currentSet >= prog.sets) {
@@ -58,7 +71,7 @@ export default function Workout({ exerciseId, onDone }) {
     }
   }
 
-  function handleLevelUp() {
+  async function handleLevelUp() {
     const maxLevel = ex.progressions.length;
     const newLevel = Math.min(level + 1, maxLevel);
     const today = new Date().toDateString();
@@ -68,25 +81,25 @@ export default function Workout({ exerciseId, onDone }) {
       totalWorkouts: (progress.totalWorkouts || 0) + 1,
       completedDates: [...new Set([...(progress.completedDates || []), today])],
     };
-    saveProgress(updated);
+    await saveProgress(updated);
     setProgress(updated);
     onDone();
   }
 
-  function handleKeepLevel() {
+  async function handleKeepLevel() {
     const today = new Date().toDateString();
     const updated = {
       ...progress,
       totalWorkouts: (progress.totalWorkouts || 0) + 1,
       completedDates: [...new Set([...(progress.completedDates || []), today])],
     };
-    saveProgress(updated);
+    await saveProgress(updated);
     setProgress(updated);
     onDone();
   }
 
   const circumference = 2 * Math.PI * 40;
-  const restProgress = timerActive ? (1 - timeLeft / prog.rest) * circumference : 0;
+  const restProgress = timerActive && timeLeft !== null ? (1 - timeLeft / prog.rest) * circumference : 0;
 
   return (
     <div className="screen workout-screen">

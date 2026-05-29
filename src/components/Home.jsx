@@ -1,11 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { EXERCISES, loadProgress, getExerciseProgression, getTodayWorkoutStatus, getNextWorkoutDay } from '../workoutData';
 
 export default function Home({ onStartWorkout, onProgress }) {
-  const [progress] = useState(() => loadProgress());
+  const [progress, setProgress] = useState(null);
+
+  useEffect(() => {
+    loadProgress().then(setProgress);
+  }, []);
+
+  if (!progress) {
+    return (
+      <div className="screen" style={{ alignItems: 'center', justifyContent: 'center', minHeight: '100dvh' }}>
+        <div className="loading">Henter data...</div>
+      </div>
+    );
+  }
+
   const isWorkoutDay = getTodayWorkoutStatus();
   const nextDay = getNextWorkoutDay();
-
   const today = new Date().toDateString();
   const doneToday = progress.completedDates?.includes(today);
 

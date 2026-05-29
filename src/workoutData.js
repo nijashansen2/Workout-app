@@ -1,3 +1,6 @@
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db, ensureAuth } from './firebase';
+
 export const EXERCISES = {
   pushups: {
     id: 'pushups',
@@ -43,7 +46,7 @@ export const EXERCISES = {
 };
 
 export const SCHEDULE_DAYS = ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'];
-export const WORKOUT_DAYS = [1, 3, 5]; // Mon, Wed, Fri (0=Sun)
+export const WORKOUT_DAYS = [1, 3, 5];
 
 export function getTodayWorkoutStatus() {
   const day = new Date().getDay();
@@ -60,22 +63,33 @@ export function getNextWorkoutDay() {
   }
 }
 
-export function loadProgress() {
+export const DEFAULT_PROGRESS = {
+  pushups: 1,
+  squats: 1,
+  pullups: 1,
+  completedDates: [],
+  totalWorkouts: 0,
+};
+
+export async function loadProgress() {
   try {
-    return JSON.parse(localStorage.getItem('workout_progress')) || {
-      pushups: 1,
-      squats: 1,
-      pullups: 1,
-      completedDates: [],
-      totalWorkouts: 0,
-    };
+    const user = await ensureAuth();
+    const ref = doc(db, 'users', user.uid);
+    const snap = await getDoc(ref);
+    return snap.exists() ? snap.data() : { ...DEFAULT_PROGRESS };
   } catch {
-    return { pushups: 1, squats: 1, pullups: 1, completedDates: [], totalWorkouts: 0 };
+    return { ...DEFAULT_PROGRESS };
   }
 }
 
-export function saveProgress(progress) {
-  localStorage.setItem('workout_progress', JSON.stringify(progress));
+export async function saveProgress(progress) {
+  try {
+    const user = await ensureAuth();
+    const ref = doc(db, 'users', user.uid);
+    await setDoc(ref, progress);
+  } catch (e) {
+    console.error('Kunne ikke gemme fremgang:', e);
+  }
 }
 
 export function getExerciseProgression(exerciseId, level) {
