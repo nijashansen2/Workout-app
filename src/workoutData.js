@@ -74,10 +74,13 @@ export const DEFAULT_PROGRESS = {
 export async function loadProgress() {
   try {
     const user = await ensureAuth();
+    console.log('[Firebase] Indlogget som:', user.uid);
     const ref = doc(db, 'users', user.uid);
     const snap = await getDoc(ref);
+    console.log('[Firebase] Load:', snap.exists() ? snap.data() : 'ingen data endnu');
     return snap.exists() ? snap.data() : { ...DEFAULT_PROGRESS };
-  } catch {
+  } catch (e) {
+    console.error('[Firebase] Load fejl:', e);
     return { ...DEFAULT_PROGRESS };
   }
 }
@@ -85,10 +88,12 @@ export async function loadProgress() {
 export async function saveProgress(progress) {
   try {
     const user = await ensureAuth();
+    console.log('[Firebase] Gemmer for:', user.uid, progress);
     const ref = doc(db, 'users', user.uid);
     await setDoc(ref, progress);
+    console.log('[Firebase] Gemt OK');
   } catch (e) {
-    console.error('Kunne ikke gemme fremgang:', e);
+    console.error('[Firebase] Save fejl:', e);
   }
 }
 
